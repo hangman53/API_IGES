@@ -1,0 +1,26 @@
+services:
+  api:
+    build: .
+    container_name: iges-api
+    ports:
+      - "8080:80"
+    env_file: .env
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    container_name: iges-api-db
+    environment:
+      POSTGRES_DB: ${DB_NAME:-iges}
+      POSTGRES_USER: ${DB_USER:-iges_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Defina DB_PASSWORD no arquivo .env (copie o .env.example)}
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
