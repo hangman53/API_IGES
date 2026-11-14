@@ -4,18 +4,18 @@ declare(strict_types=1);
 namespace App\Modules\Enquadramento\Infrastructure;
 
 use App\Modules\Enquadramento\Domain\RespostaRepository;
-use PDO;
+use App\Shared\Database\Conexao;
 use Throwable;
 
 final class PdoRespostaRepository implements RespostaRepository
 {
-    public function __construct(private readonly PDO $pdo)
+    public function __construct(private readonly Conexao $conexao)
     {
     }
 
     public function notasDoUsuario(int $usuarioId): array
     {
-        $stmt = $this->pdo->prepare(
+        $stmt = $this->conexao->pdo()->prepare(
             'SELECT instrumento, codigo_pergunta, nota
                FROM respostas_enquadramento
               WHERE usuario_id = :usuario'
@@ -31,9 +31,10 @@ final class PdoRespostaRepository implements RespostaRepository
 
     public function salvarInstrumento(int $usuarioId, int $instrumento, array $notas): void
     {
-        $this->pdo->beginTransaction();
+        $pdo = $this->conexao->pdo();
+        $pdo->beginTransaction();
         try {
-            $stmt = $this->pdo->prepare(
+            $stmt = $pdo->prepare(
                 'INSERT INTO respostas_enquadramento (usuario_id, instrumento, codigo_pergunta, nota)
                  VALUES (:usuario, :instrumento, :codigo, :nota)
                  ON CONFLICT (usuario_id, instrumento, codigo_pergunta)
@@ -47,9 +48,9 @@ final class PdoRespostaRepository implements RespostaRepository
                     ':nota'        => $nota,
                 ]);
             }
-            $this->pdo->commit();
+            $pdo->commit();
         } catch (Throwable $e) {
-            $this->pdo->rollBack();
+            $pdo->rollBack();
             throw $e;
         }
     }

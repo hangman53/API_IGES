@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Shared;
 
 use App\Shared\Auth\Autenticador;
+use App\Shared\Database\Conexao;
 use App\Shared\Database\Connection;
 use App\Shared\Http\HttpException;
 use App\Shared\Http\Request;
@@ -25,7 +26,8 @@ final class Kernel
     {
         $container = new Container();
         $container->set(PDO::class, fn () => Connection::fromEnv());
-        $container->set(Autenticador::class, fn (Container $c) => new Autenticador($c->get(PDO::class)));
+        $container->set(Conexao::class, fn (Container $c) => new Conexao(fn () => $c->get(PDO::class)));
+        $container->set(Autenticador::class, fn (Container $c) => new Autenticador($c->get(Conexao::class)));
 
         $modulos = array_map(fn (string $classe) => new $classe(), $classesModulos);
 

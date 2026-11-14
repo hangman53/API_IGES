@@ -11,9 +11,9 @@ use App\Modules\Enquadramento\Http\EnquadramentoController;
 use App\Modules\Enquadramento\Infrastructure\PdoRespostaRepository;
 use App\Shared\Auth\Autenticador;
 use App\Shared\Container;
+use App\Shared\Database\Conexao;
 use App\Shared\Http\Router;
 use App\Shared\Module\Module;
-use PDO;
 
 final class EnquadramentoModule implements Module
 {
@@ -24,7 +24,7 @@ final class EnquadramentoModule implements Module
 
     public function registrar(Container $c): void
     {
-        $c->set(RespostaRepository::class, fn (Container $c) => new PdoRespostaRepository($c->get(PDO::class)));
+        $c->set(RespostaRepository::class, fn (Container $c) => new PdoRespostaRepository($c->get(Conexao::class)));
         $c->set(EnquadramentoService::class, fn (Container $c) => new EnquadramentoService(
             $c->get(RespostaRepository::class),
             new CalculadoraEnquadramento(),

@@ -3,13 +3,13 @@ declare(strict_types=1);
 
 namespace App\Shared\Auth;
 
+use App\Shared\Database\Conexao;
 use App\Shared\Http\HttpException;
 use App\Shared\Http\Request;
-use PDO;
 
 final class Autenticador
 {
-    public function __construct(private readonly PDO $pdo)
+    public function __construct(private readonly Conexao $conexao)
     {
     }
 
@@ -17,7 +17,7 @@ final class Autenticador
     {
         $token = $request->bearerToken() ?? throw HttpException::naoAutenticado();
 
-        $stmt = $this->pdo->prepare('SELECT id, username, email, role FROM usuarios WHERE token = :token');
+        $stmt = $this->conexao->pdo()->prepare('SELECT id, username, email, role FROM usuarios WHERE token = :token');
         $stmt->execute([':token' => $token]);
         $linha = $stmt->fetch();
 
