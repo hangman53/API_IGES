@@ -29,8 +29,7 @@ API_IGES/
         │   ├── Http/             # controllers
         │   ├── migrations/       # SQL das tabelas do módulo
         │   └── EnquadramentoModule.php
-        ├── Iges/                 # mesma estrutura
-        └── TestePreliminar/      # mesma estrutura
+        └── Iges/                 # mesma estrutura
 ```
 
 ## Regras de fronteira
@@ -53,13 +52,8 @@ Vale colocá-lo no CI.
 | POST   | `/enquadramento/respostas`    | Enquadramento | Grava um instrumento e devolve o cálculo dele |
 | GET    | `/enquadramento/resultado`    | Enquadramento | Cálculo de todos os instrumentos respondidos |
 | GET    | `/iges/progresso`             | IGES          | Instrumentos respondidos e percentual       |
-| GET    | `/teste-preliminar/configuracao` | TestePreliminar | Componentes, pesos, instrumentos e níveis (público) |
-| GET    | `/teste-preliminar/respostas` | TestePreliminar | Respostas salvas do usuário logado        |
-| POST   | `/teste-preliminar/respostas` | TestePreliminar | Grava as respostas e devolve o iGES       |
-| GET    | `/teste-preliminar/resultado` | TestePreliminar | iGES calculado a partir das respostas salvas |
 
-Com exceção de `/health`, `/enquadramento/questionario` e `/teste-preliminar/configuracao`,
-as rotas exigem `Authorization: Bearer <token>`.
+Com exceção de `/health` e `/enquadramento/questionario`, as rotas exigem `Authorization: Bearer <token>`.
 
 ### Cálculo do enquadramento
 
@@ -94,59 +88,6 @@ Resposta:
 
 A regra está em [CalculadoraEnquadramento.php](src/Modules/Enquadramento/Domain/CalculadoraEnquadramento.php)
 e os testes em `tests/` (`composer test`).
-
-### Teste preliminar (cálculo do iGES)
-
-Reproduz a planilha `Teste preliminares v9.xlsx`. São 8 componentes agrupados em 3 mecanismos:
-
-| Mecanismo  | Componentes (peso)                                   |
-|------------|------------------------------------------------------|
-| Estratégia | PO, I, COR (1/9 cada)                                |
-| Liderança  | P, CC (1/6 cada)                                     |
-| Controle   | GR, A, MA (1/9 cada)                                 |
-
-Cada um dos 23 instrumentos básicos tem um nível de 1 a 8 em alguns componentes
-([CatalogoInstrumentos.php](src/Modules/TestePreliminar/Domain/CatalogoInstrumentos.php)).
-O fator de cada nível cai 10% a cada nível: `fator(n) = 1 × 0,9^(n-1)`.
-
-Para cada componente:
-
-- **Máximo** = soma dos fatores de todos os instrumentos básicos do componente
-  (menos os caso a caso desconsiderados).
-- **Nota básica** = 100 × (fatores dos básicos que o município possui) ÷ máximo.
-- **Nota básico + extras** = 100 × (básicos do município + extras) ÷ (máximo + extras).
-
-Depois:
-
-- **iGES** = produto de `nota ^ peso` de cada componente (média geométrica ponderada, 0 a 100).
-  Se faltar o instrumento mínimo de algum componente, o iGES vale 0, `calculavel` fica `false`
-  e a falta aparece em `pendencias`.
-- **Nota do mecanismo** = média das notas dos seus componentes (0 a 100).
-- **Categoria**: Excelente (> 90), Bom (> 70), Médio (> 50), Ruim (> 25), Muito ruim (0 a 25).
-
-Exemplo de `POST /teste-preliminar/respostas` (ids conforme `/teste-preliminar/configuracao`):
-
-```json
-{
-  "instrumentos": [1, 2, 3, 4, 5, 6, 7, 11, 12, 16, 17],
-  "desconsiderados": [],
-  "minimos": ["PO", "I", "COR", "P", "CC", "GR", "A", "MA"],
-  "extras": [
-    { "nome": "Instrumento extra 1", "niveis": { "PO": 1, "I": 2, "COR": 3 } }
-  ]
-}
-```
-
-- `instrumentos`: ids dos instrumentos básicos que o município possui.
-- `desconsiderados`: instrumentos caso a caso (1, 10, 12, 16) que não se aplicam ao município.
-- `minimos`: componentes em que o município tem o instrumento mínimo.
-- `extras`: até 10 instrumentos encontrados no município. Os níveis vão de 1 a 8, não se repetem
-  entre componentes e não pulam números (para ter nível 3 é preciso ter 1 e 2).
-
-A resposta traz `iges.basico` e `iges.basicoMaisExtras` (valor, categoria, calculavel),
-a nota de cada mecanismo e de cada componente, e as pendências. O teste
-[CalculadoraIgesTest.php](tests/Modules/TestePreliminar/CalculadoraIgesTest.php) reproduz o
-município de exemplo da planilha (iGES básico 48,64 e básico + extras 54,34).
 
 ## Rodando
 
